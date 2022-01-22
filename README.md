@@ -1,0 +1,3 @@
+# 描述
+mdocker是仿照《自己动手写docker》实现的docker容器，自己动手写docker是基于linux内核4.0之前的AUFS实现的文件系统，本项目采用的是基于linux内核5.10版本的wsl2开发的，采用的是overlay来实现的文件系统
+

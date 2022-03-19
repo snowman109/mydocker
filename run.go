@@ -24,7 +24,7 @@ func Run(tty bool, cmdArray []string, res *subsystems.ResourceConfig, volume str
 		log.Println(err.Error())
 	}
 	// 记录容器信息
-	containerName, err := recordContainerInfo(parent.Process.Pid, cmdArray, name)
+	containerName, err := recordContainerInfo(parent.Process.Pid, cmdArray, name, volume)
 	if err != nil {
 		fmt.Println(fmt.Sprintf("Record container info error %v", err))
 		return
@@ -45,12 +45,9 @@ func Run(tty bool, cmdArray []string, res *subsystems.ResourceConfig, volume str
 	if tty {
 		parent.Wait() //
 		deleteContainerInfo(containerName)
+		container.DeleteWorkSpace(containerName, volume)
 	}
-	mntURL := "/home/wyt/mnt/"
-	rootURL := "/home/wyt/"
-	container.DeleteWorkSpace(rootURL, mntURL, volume)
-	os.Exit(0)
-
+	//os.Exit(0)
 }
 
 // 如果使用tty方式的容器，那么容器退出后，就会删除容器的相关信息
@@ -79,7 +76,7 @@ func randStringBytes(n int) string {
 }
 
 // recordContainerInfo 保存容器信息到宿主机文件系统
-func recordContainerInfo(containerPID int, commandArray []string, containerName string) (string, error) {
+func recordContainerInfo(containerPID int, commandArray []string, containerName, volume string) (string, error) {
 	id := randStringBytes(10)
 	createTime := time.Now().Format("2006-01-02 15:04:05")
 	command := strings.Join(commandArray, "")
@@ -94,6 +91,7 @@ func recordContainerInfo(containerPID int, commandArray []string, containerName 
 		Command:     command,
 		CreatedTime: createTime,
 		Status:      container.RUNNING,
+		Volume:      volume,
 	}
 	jsonBytes, err := json.Marshal(containerInfo)
 	if err != nil {
@@ -119,4 +117,3 @@ func recordContainerInfo(containerPID int, commandArray []string, containerName 
 	}
 	return containerName, nil
 }
-

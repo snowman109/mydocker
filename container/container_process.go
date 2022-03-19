@@ -14,6 +14,7 @@ type ContainerInfo struct {
 	Command     string `json:"command"`     // 容器内init进程的运行命令
 	CreatedTime string `json:"createdTime"` // 创建时间
 	Status      string `json:"status"`      // 容器的状态
+	Volume      string `json:"volume"`      // 容器的数据卷
 }
 
 const (
@@ -23,6 +24,10 @@ const (
 	DefaultInfoLocation = "/var/run/mydocker/%s/"
 	ConfigName          = "config.json"
 	ContainerLogFile    = "container.log"
+	RootUrl             = "/home/wyt"
+	MntUrl              = "/home/wyt/mnt/%s"
+	WriteLayerUrl       = "/home/wyt/writeLayer/%s"
+	WorkUrl             = "/home/wyt/work/%s"
 )
 
 // NewParentProcess
@@ -66,24 +71,22 @@ func NewParentProcess(tty bool, containerName, volume string) (*exec.Cmd, *os.Fi
 	}
 	cmd.ExtraFiles = []*os.File{readPipe} // 带着文件句柄去创建子进程
 	//cmd.Dir = "/home/wyt/busybox"
-	mntURL := "/home/wyt/mnt/"
-	rootURL := "/home/wyt/"
-	NewWorkSpace(rootURL, mntURL, volume)
-	cmd.Dir = mntURL
+	NewWorkSpace(containerName, volume)
+	cmd.Dir = fmt.Sprintf(MntUrl, containerName)
 	return cmd, writePipe
 }
 func NewPipe() (*os.File, *os.File, error) {
 	return os.Pipe()
 }
-func NewWorkSpace(rootURL string, mntURL string, volume string) {
-	CreateReadOnlyLayer(rootURL)
-	CreateWriteLayer(rootURL)
-	CreateMountPoint(rootURL, mntURL)
+func NewWorkSpace(containerName string, volume string) {
+	CreateReadOnlyLayer("busybox")
+	CreateWriteLayer(containerName)
+	CreateMountPoint(containerName, "busybox")
 	if volume != "" {
 		volumeURLs := volumeUrlExtract(volume)
 		length := len(volumeURLs)
 		if length == 2 && volumeURLs[0] != "" && volumeURLs[1] != "" {
-			MountVolume(rootURL, mntURL, volumeURLs)
+			MountVolume(containerName, volumeURLs)
 			fmt.Println(volumeURLs)
 		} else {
 			fmt.Println("Volume parameter input is not correct.")

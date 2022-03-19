@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"strings"
 )
 
-func MountVolume(rootURL string, mntURL string, volumeURLs []string) {
+func MountVolume(containerName string, volumeURLs []string) {
 	// 创建宿主机文件目录
 	parentUrl := volumeURLs[0]
 	if err := os.Mkdir(parentUrl, 0755); err != nil {
@@ -17,7 +16,7 @@ func MountVolume(rootURL string, mntURL string, volumeURLs []string) {
 	}
 	// 在容器文件系统里创建挂载点
 	containerUrl := volumeURLs[1]
-	containerVolumeUrl := path.Join(mntURL, containerUrl)
+	containerVolumeUrl := fmt.Sprintf(MntUrl, containerName) + "/" + containerUrl
 	if err := os.Mkdir(containerVolumeUrl, 0755); err != nil {
 		fmt.Println(fmt.Sprintf("Mkdir container dir %s error. %v", containerVolumeUrl, err))
 		return
@@ -47,9 +46,9 @@ func MountVolume(rootURL string, mntURL string, volumeURLs []string) {
 func volumeUrlExtract(volume string) []string {
 	return strings.Split(volume, ":")
 }
-func CreateReadOnlyLayer(rootURL string) {
-	busyboxURL := rootURL + "busybox/"
-	busyboxTarURL := rootURL + "busybox.tar"
+func CreateReadOnlyLayer(imageName string) {
+	busyboxURL := RootUrl + "busybox/"
+	busyboxTarURL := RootUrl + "busybox.tar"
 	exist, err := PathExists(busyboxURL)
 	if err != nil {
 		fmt.Println(fmt.Sprintf("Fail to judge whether dir %s exists. %v", busyboxURL, err))
@@ -66,8 +65,8 @@ func CreateReadOnlyLayer(rootURL string) {
 
 	}
 }
-func CreateWriteLayer(rootURL string) {
-	writeURL := rootURL + "writeLayer/"
+func CreateWriteLayer(containerName string) {
+	writeURL := fmt.Sprintf(WriteLayerUrl, containerName)
 	exist, err := PathExists(writeURL)
 	if err != nil {
 		fmt.Println(fmt.Sprintf("Fail to judge whether dir %s exists. %v", writeURL, err))
@@ -79,17 +78,19 @@ func CreateWriteLayer(rootURL string) {
 		}
 	}
 }
-func CreateMountPoint(rootURL string, mntURL string) {
+func CreateMountPoint(containerName, imageName string) {
 	// 创建mnt文件夹作为挂载点
+	mntURL := fmt.Sprintf(MntUrl, containerName)
 	if err := os.Mkdir(mntURL, 0777); err != nil {
 		fmt.Println(fmt.Sprintf("Mkdir dir %s error. %v", mntURL, err))
 	}
-	workDir := rootURL + "work"
+	workDir := fmt.Sprintf(WorkUrl, containerName)
 	if err := os.Mkdir(workDir, 0755); err != nil {
 		fmt.Println(fmt.Sprintf("Mkdir dir %s error. %v", workDir, err))
 	}
 	// 把writeLayer目录和busybox目录mount到mnt目录下
-	dirs := "-olowerdir=" + rootURL + "busybox,upperdir=" + rootURL + "writeLayer,workdir=" + workDir
+	dirs := "-olowerdir=" + RootUrl + "/busybox,upperdir=" + fmt.Sprintf(WriteLayerUrl, containerName)+
+	",workdir=" + workDir
 	cmd := exec.Command("mount", "-t", "overlay", "overlay", dirs, mntURL)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -108,21 +109,21 @@ func PathExists(path string) (bool, error) {
 	}
 	return false, err
 }
-func DeleteWorkSpace(rootURL string, mntURL string, volume string) {
+func DeleteWorkSpace(containerName, volume string) {
 	if volume != "" {
 		volumeURLs := volumeUrlExtract(volume)
 		length := len(volumeURLs)
 		if length == 2 && volumeURLs[0] != "" && volumeURLs[1] != "" {
-			DeleteMountPointWithVolume(rootURL, mntURL, volumeURLs)
+			DeleteMountPointWithVolume(containerName, volumeURLs)
 		}
 	}
-	DeleteMountPoint(rootURL, mntURL)
-	DeleteWriteLayer(rootURL)
+	DeleteMountPoint(containerName)
+	DeleteWriteLayer(containerName)
 }
 
-func DeleteWriteLayer(rootURL string) {
-	writeURL := rootURL + "writeLayer"
-	workURL := rootURL + "work"
+func DeleteWriteLayer(containerName string) {
+	writeURL := fmt.Sprintf(WriteLayerUrl, containerName)
+	workURL := fmt.Sprintf(WorkUrl, containerName)
 	if err := os.RemoveAll(writeURL); err != nil {
 		fmt.Println(fmt.Sprintf("Remove writelayer %s error %v", writeURL, err))
 	}
@@ -131,8 +132,9 @@ func DeleteWriteLayer(rootURL string) {
 	}
 }
 
-func DeleteMountPoint(rootURL, mntURL string) {
+func DeleteMountPoint(containerName string) {
 	// 卸载整个容器文件系统的挂载点
+	mntURL := fmt.Sprintf(MntUrl, containerName)
 	if _, err := exec.Command("umount", mntURL).CombinedOutput(); err != nil {
 		fmt.Println(fmt.Sprintf("Unmount %s error %v", mntURL, err))
 		return
@@ -143,9 +145,10 @@ func DeleteMountPoint(rootURL, mntURL string) {
 	}
 
 }
-func DeleteMountPointWithVolume(rootURL, mntURL string, volumeURLs []string) {
+func DeleteMountPointWithVolume(containerName string, volumeURLs []string) {
 	// 卸载容器里volume挂载点的文件系统
-	containerUrl := path.Join(mntURL, volumeURLs[1])
+	mntUrl := fmt.Sprintf(MntUrl, containerName)
+	containerUrl := mntUrl + "/" + volumeURLs[1]
 	cmd := exec.Command("umount", containerUrl)
 	cmd.Stdout = os.Stdout
 	cmd.Stdin = os.Stdin
@@ -154,4 +157,3 @@ func DeleteMountPointWithVolume(rootURL, mntURL string, volumeURLs []string) {
 		fmt.Println(fmt.Sprintf("Umount volume failed. %v", err))
 	}
 }
-

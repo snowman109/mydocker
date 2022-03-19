@@ -104,3 +104,38 @@ runc的项目可以分为2个部分，
 因此需要将容器的信息：PID、创建时间、运行命令等都记录下来，ps的时候直接查看这些信息。
 
 虽然docker ps能看到后台运行中的容器，但如果查看后台运行中的容器日志的话，需要将容器中的标准输出保存下来。将容器进程的标准输出挂载到``/var/run/mydocker/容器名/container.log``文件中。
+
+## 4 实现进入容器Namespace
+
+setns系统调用，可以通过传入的pid再次进入指定的Namespace中。它需要先打开``/proc/[pid]/ns``文件夹下对应的文件，然后使当前进程进入到指定的Namespace中。
+
+对于mount namespace来说，一个使用多线程的进程无法使用setns调用进入到对应的命名空间，Go每启用一个程序就是多线程，因此需要借助C来实现。
+
+CGo就能进入mount namespace的原理是，这里使用了构造函数，然后导入了C模块，一旦这个包被引用，他就会在所有Go运行的环境启动之前执行，这样就避免了Go多线程导致的无法进入mnt Namespace的问题。
+
+但这也会存在问题，它在Go之前执行，那么不需要使用exec这段代码的地方都也会运行这个程序，因此可以设置一个环境变量，不使用这个功能的代码，就不设置对应的环境变量。
+
+注意：1.这里的nsenter包要在exec.go中引用；2.nsenter.go中的``import "C"``要紧挨着上面注释中的C语言代码，不能有空行。
+
+bug：run.go中，如果不是tty的话，则不删除workspace，但执行完后直接推出了run函数，导致cgroup会被删除，但是cgroup还在使用，因此会报错删除失败。这里如果非tty，应该不删除cgroup。
+
+## 5 停止容器
+
+1.将containerInfo的status改为STOP，PID置空
+
+2.通过kill停止进程。
+
+这里终止采用的是SIGTERM信号，即15.常用的信号
+HUP    1    终端断线
+
+INT     2    中断（同 Ctrl + C）
+
+QUIT    3    退出（同 Ctrl + \）
+
+TERM   15    终止 （进程在退出前可以清理并释放资源）
+
+KILL    9    强制终止
+
+CONT   18    继续（与STOP相反， fg/bg命令）
+
+STOP    19    暂停（同 Ctrl + Z）

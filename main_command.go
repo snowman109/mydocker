@@ -19,15 +19,18 @@ var runCommand = cli.Command{
 		&cli.StringFlag{Name: "v", Usage: "volume"},
 		&cli.BoolFlag{Name: "d", Usage: "detach container"},
 		&cli.StringFlag{Name: "name", Usage: "container name"},
+		&cli.StringSliceFlag{Name: "e", Usage: "set environment"},
 	},
 	Action: func(context *cli.Context) error {
 		if context.Args().Len() < 1 {
 			return fmt.Errorf("Missing container command")
 		}
-		var cmdArray []string
+		cmdArray := make([]string, 0, context.Args().Len())
 		for _, arg := range context.Args().Slice() {
 			cmdArray = append(cmdArray, arg)
 		}
+		imageName := cmdArray[0]
+		cmdArray = cmdArray[1:]
 		//fmt.Println("run cmdArray ", cmdArray)
 		//fmt.Println("run context.Args().Get(0)", context.Args().Get(0))
 		//cmd := context.Args().Get(0)
@@ -46,7 +49,8 @@ var runCommand = cli.Command{
 		containerName := context.String("name")
 		// 把volume参数传给Run函数
 		volume := context.String("v")
-		Run(tty, cmdArray, resConf, volume, containerName)
+		envSlice := context.StringSlice("e")
+		Run(tty, cmdArray, resConf, volume, containerName, imageName,envSlice)
 		return nil
 	}, // 这里是run命令执行的真正函数，1.判断参数是否包含command；2.获取用户指定的command；3.调用Run function去准备启动容器
 }
@@ -65,11 +69,12 @@ var commitCommand = cli.Command{
 	Name:  "commit",
 	Usage: "commit a container into image",
 	Action: func(context *cli.Context) error {
-		if context.Args().Len() < 1 {
+		if context.Args().Len() < 2 {
 			return fmt.Errorf("Missing container name")
 		}
-		imageName := context.Args().Get(0)
-		commitContainer(imageName)
+		containerName := context.Args().Get(0)
+		imageName := context.Args().Get(1)
+		commitContainer(containerName, imageName)
 		return nil
 	},
 }

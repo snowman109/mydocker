@@ -28,6 +28,9 @@ func ExecContainer(containerName string, commandArrays []string) {
 	cmd.Stderr = os.Stderr
 	os.Setenv(ENV_EXEC_PID, pid)
 	os.Setenv(ENV_EXEC_CMD, cmdStr)
+	containerEnvs := getEnvsByPid(pid)
+	cmd.Env = append(os.Environ(), containerEnvs...) // 执行exec时新开进程去执行，此时进程的env是宿主机的，并不是docker容器的。
+
 	if err = cmd.Run(); err != nil {
 		fmt.Printf("Exec container %s error %v", containerName, err)
 	}
@@ -45,4 +48,15 @@ func getContainerPidByName(containerName string) (string, error) {
 		return "", err
 	}
 	return containerInfo.Pid, nil
+}
+func getEnvsByPid(pid string) []string {
+	path := fmt.Sprintf("/proc/%s/environ", pid)
+	contentBytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		fmt.Printf("Read file %s error %v\n", path, err)
+		return
+	}
+	// envs split by \u0000
+	envs := strings.Split(string(contentBytes), "\u0000")
+	return envs
 }

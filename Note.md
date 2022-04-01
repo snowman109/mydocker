@@ -139,3 +139,8 @@ KILL    9    强制终止
 CONT   18    继续（与STOP相反， fg/bg命令）
 
 STOP    19    暂停（同 Ctrl + Z）
+
+## 7 通过容器制作镜像
+
+在实现volume时有个问题，就是mount挂载了容器中的某个子文件夹后，在这子文件夹中的改动并不会带到writeLayer中。
+

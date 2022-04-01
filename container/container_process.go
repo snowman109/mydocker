@@ -36,7 +36,7 @@ const (
 // 2.后面的args是参数，其中init是传递给本进程的第一个参数，在本例中，其实就是会调用initCommand取初始化进程的一些环境和资源
 // 3.下来的clone参数就是去fork出来一个新进程，并且使用了namespace隔离新创建的进程和外部环境
 // 4.如果用户指定了-ti参数，就需要把当前进程的输入输出导入到标准输入输出上
-func NewParentProcess(tty bool, containerName, volume string) (*exec.Cmd, *os.File) {
+func NewParentProcess(tty bool, containerName, volume, imageName string, envSlice []string) (*exec.Cmd, *os.File) {
 	readPipe, writePipe, err := NewPipe()
 	if err != nil {
 		fmt.Println("New pipe error ", err.Error())
@@ -70,18 +70,19 @@ func NewParentProcess(tty bool, containerName, volume string) (*exec.Cmd, *os.Fi
 		cmd.Stdout = stdLogFile
 	}
 	cmd.ExtraFiles = []*os.File{readPipe} // 带着文件句柄去创建子进程
+	cmd.Env = append(os.Environ(), envSlice...)
 	//cmd.Dir = "/home/wyt/busybox"
-	NewWorkSpace(containerName, volume)
+	NewWorkSpace(containerName, volume, imageName)
 	cmd.Dir = fmt.Sprintf(MntUrl, containerName)
 	return cmd, writePipe
 }
 func NewPipe() (*os.File, *os.File, error) {
 	return os.Pipe()
 }
-func NewWorkSpace(containerName string, volume string) {
-	CreateReadOnlyLayer("busybox")
+func NewWorkSpace(containerName string, volume string, imageName string) {
+	CreateReadOnlyLayer(imageName)
 	CreateWriteLayer(containerName)
-	CreateMountPoint(containerName, "busybox")
+	CreateMountPoint(containerName, imageName)
 	if volume != "" {
 		volumeURLs := volumeUrlExtract(volume)
 		length := len(volumeURLs)
@@ -92,4 +93,5 @@ func NewWorkSpace(containerName string, volume string) {
 			fmt.Println("Volume parameter input is not correct.")
 		}
 	}
+	//CreateMountPoint(containerName, "busybox")
 }

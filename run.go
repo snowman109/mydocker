@@ -14,8 +14,8 @@ import (
 	"time"
 )
 
-func Run(tty bool, cmdArray []string, res *subsystems.ResourceConfig, volume string, name string) {
-	parent, writePipe := container.NewParentProcess(tty, name, volume)
+func Run(tty bool, cmdArray []string, res *subsystems.ResourceConfig, volume string, name string, imageName string, envSlice []string) {
+	parent, writePipe := container.NewParentProcess(tty, name, volume, imageName,envSlice)
 	if parent == nil {
 		fmt.Println("New parent process error")
 		return

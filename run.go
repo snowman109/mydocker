@@ -15,7 +15,7 @@ import (
 )
 
 func Run(tty bool, cmdArray []string, res *subsystems.ResourceConfig, volume string, name string, imageName string, envSlice []string) {
-	parent, writePipe := container.NewParentProcess(tty, name, volume, imageName,envSlice)
+	parent, writePipe := container.NewParentProcess(tty, name, volume, imageName, envSlice)
 	if parent == nil {
 		fmt.Println("New parent process error")
 		return
@@ -104,7 +104,7 @@ func recordContainerInfo(containerPID int, commandArray []string, containerName,
 	//	fmt.Println(fmt.Sprintf("Mkdir error %s error %v", dirUrl, err))
 	//	return "", err
 	//} 这里在创建log的时候已经创建文件夹了
-	fileName := dirUrl + "/" + container.ConfigName
+	fileName := dirUrl + container.ConfigName
 	file, err := os.Create(fileName)
 	if err != nil {
 		fmt.Println(fmt.Sprintf("Create file %s error %v", file, err))

@@ -100,10 +100,10 @@ func recordContainerInfo(containerPID int, commandArray []string, containerName,
 	}
 	jsonStr := string(jsonBytes)
 	dirUrl := fmt.Sprintf(container.DefaultInfoLocation, containerName)
-	//if err = os.Mkdir(dirUrl, 0622); err != nil {
-	//	fmt.Println(fmt.Sprintf("Mkdir error %s error %v", dirUrl, err))
-	//	return "", err
-	//} 这里在创建log的时候已经创建文件夹了
+	if err = os.Mkdir(dirUrl, 0622); err != nil {
+		fmt.Println(fmt.Sprintf("Mkdir error %s error %v", dirUrl, err))
+		//return "", err
+	} //这里在创建log的时候已经创建文件夹了
 	fileName := dirUrl + container.ConfigName
 	file, err := os.Create(fileName)
 	if err != nil {

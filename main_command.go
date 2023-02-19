@@ -47,10 +47,11 @@ var runCommand = cli.Command{
 			CpuSet:      context.String("cpuset"),
 		}
 		containerName := context.String("name")
+		fmt.Println("ContainerName is " + containerName)
 		// 把volume参数传给Run函数
 		volume := context.String("v")
 		envSlice := context.StringSlice("e")
-		Run(tty, cmdArray, resConf, volume, containerName, imageName,envSlice)
+		Run(tty, cmdArray, resConf, volume, containerName, imageName, envSlice)
 		return nil
 	}, // 这里是run命令执行的真正函数，1.判断参数是否包含command；2.获取用户指定的command；3.调用Run function去准备启动容器
 }

@@ -24,10 +24,10 @@ const (
 	DefaultInfoLocation = "/var/run/mydocker/%s/"
 	ConfigName          = "config.json"
 	ContainerLogFile    = "container.log"
-	RootUrl             = "/home/wyt"
-	MntUrl              = "/home/wyt/mnt/%s"
-	WriteLayerUrl       = "/home/wyt/writeLayer/%s"
-	WorkUrl             = "/home/wyt/work/%s"
+	RootUrl             = "/var/mydocker"
+	MntUrl              = RootUrl + "/mnt/%s"
+	WriteLayerUrl       = RootUrl + "/writeLayer/%s"
+	WorkUrl             = RootUrl + "/work/%s"
 )
 
 // NewParentProcess

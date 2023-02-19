@@ -54,7 +54,7 @@ func getEnvsByPid(pid string) []string {
 	contentBytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		fmt.Printf("Read file %s error %v\n", path, err)
-		return
+		return nil
 	}
 	// envs split by \u0000
 	envs := strings.Split(string(contentBytes), "\u0000")

@@ -1,11 +1,13 @@
 # 第三章
 
-1.Linux下的/proc文件系统是内核提供的，它其实不是一个真正的文件系统，只包含了系统运行时的信息（比如内存、mount设备、硬件配置等）
+Linux下的/proc文件系统是内核提供的，它其实不是一个真正的文件系统，只包含了系统运行时的信息（比如内存、mount设备、硬件配置等）
+
 **只存在于内存中，不占用外存空间**。它以文件系统的形式存在，为访问内核数据的操作提供接口。
 实际上，很多系统工具都是简单地去读取这个文件系统的内容，比如lsmod就是cat/proc/modulse
 
 当遍历这个目录时，会发现很多数字，这是为进程创建的空间，数字就是pid。
 
+```shell
 /proc/N PID 为N的进程信息
 /proc/N/cmdline 进程启动命令
 /proc/N/cwd 链接到进程当前工作目录
@@ -13,12 +15,13 @@
 /proc/N/exe 链接到进程的执行命令文件
 /proc/N/fd 包含进程相关的所有文件描述符
 /proc/N/maps 与进程相关的内存映射信息
-/proc/N/mem 指代进程持有的内存，不可读
+/proc/N/mem 指代进程持有的内存,不可读
 /proc/N/root 连接到进程的根目录
 /proc/N/stat 进程的状态
 /proc/N/statm 进程使用的内存状态
-/proc/N/status 进程状态信息，比stat/statm更具可读性
+/proc/N/status 进程状态信息,比stat/statm更具可读性
 /proc/self 链接到当前正在运行的
+```
 
 # 第四章
 
@@ -81,6 +84,7 @@ DeleteMountPointWithVolume函数处理逻辑如下：
 要理解runc，我们需要了解容器标准OCI（Open Container Initiative）可以理解为容器运行标准，是由多个组织共同成立，主要是维护runc的标准协议和相关的开发工作。所谓的runc主要是负责容器生命周期的管理，以及对容器状态的描述。
 
 runc实现了容器的init，run，create，ps...我们在运行容器所需要的cmd。
+
 runc的项目可以分为2个部分，
 第一个就是底层隔离，网络等实现，这个主要在libcontainer中实现，这一层主要是对操作系统调用的封装,还有就是对docker文件系统的实现。
 第二层就是提供基础容器cmd调用，比如提到的create，ps等cmd. 基本runc主要是这2块功能，其实只要有这2大块功能，其实就可以自己实现对container生命周期管理了。以下我将解析几个cmd来说明怎么调用的libcontainer。
